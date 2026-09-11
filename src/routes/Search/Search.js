@@ -1,19 +1,18 @@
 // Copyright (C) 2017-2023 Smart code 203358507
 
 const React = require('react');
-const PropTypes = require('prop-types');
 const classnames = require('classnames');
-const debounce = require('lodash.debounce');
 const useTranslate = require('stremio/common/useTranslate');
+const { default: useVisibleCatalogs } = require('stremio/common/useVisibleCatalogs');
 const { default: Icon } = require('@stremio/stremio-icons/react');
-const { withCoreSuspender, getVisibleChildrenRange } = require('stremio/common');
+const { withCoreSuspender } = require('stremio/common');
 const { Image, MainNavBars, MetaItem, MetaRow } = require('stremio/components');
 const useSearch = require('./useSearch');
 const styles = require('./styles');
+const { useSearchParams } = require('react-router-dom');
 
-const THRESHOLD = 100;
-
-const Search = ({ queryParams }) => {
+const Search = () => {
+    const [queryParams] = useSearchParams();
     const t = useTranslate();
     const [search, loadSearchRows] = useSearch(queryParams);
     const query = React.useMemo(() => {
@@ -28,23 +27,10 @@ const Search = ({ queryParams }) => {
             :
             null;
     }, [search.selected]);
-    const scrollContainerRef = React.useRef();
-    const onVisibleRangeChange = React.useCallback(() => {
-        if (search.catalogs.length === 0) {
-            return;
-        }
-
-        const range = getVisibleChildrenRange(scrollContainerRef.current, THRESHOLD);
-        if (range === null) {
-            return;
-        }
-
-        loadSearchRows(range);
-    }, [search.catalogs]);
-    const onScroll = React.useCallback(debounce(onVisibleRangeChange, 250), [onVisibleRangeChange]);
-    React.useLayoutEffect(() => {
-        onVisibleRangeChange();
-    }, [search.catalogs, onVisibleRangeChange]);
+    const { catalogRows, scrollContainerRef, onScroll } = useVisibleCatalogs({
+        catalogs: search.catalogs,
+        loadRange: loadSearchRows,
+    });
     return (
         <MainNavBars className={styles['search-container']} route={'search'} query={query}>
             <div ref={scrollContainerRef} className={styles['search-content']} onScroll={onScroll}>
@@ -84,7 +70,7 @@ const Search = ({ queryParams }) => {
                                 <div className={styles['message-label']}>{ t.string('STREMIO_TV_SEARCH_NO_ADDONS') }</div>
                             </div>
                             :
-                            search.catalogs.map((catalog, index) => {
+                            catalogRows.map(({ catalog, index }) => {
                                 switch (catalog.content?.type) {
                                     case 'Ready': {
                                         return (
@@ -127,14 +113,9 @@ const Search = ({ queryParams }) => {
     );
 };
 
-Search.propTypes = {
-    queryParams: PropTypes.instanceOf(URLSearchParams)
+const SearchFallback = () => {
+    const [queryParams] = useSearchParams();
+    return <MainNavBars className={styles['search-container']} route={'search'} query={queryParams.get('search') ?? queryParams.get('query')} />;
 };
-
-const SearchFallback = ({ queryParams }) => (
-    <MainNavBars className={styles['search-container']} route={'search'} query={queryParams.get('search') ?? queryParams.get('query')} />
-);
-
-SearchFallback.propTypes = Search.propTypes;
 
 module.exports = withCoreSuspender(Search, SearchFallback);

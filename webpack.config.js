@@ -103,7 +103,7 @@ module.exports = (env, argv) => ({
                         options: {
                             postcssOptions: {
                                 plugins: [
-                                    require('cssnano')({
+                                    ['cssnano', {
                                         preset: [
                                             'advanced',
                                             {
@@ -133,7 +133,7 @@ module.exports = (env, argv) => ({
                                                 zindex: false
                                             }
                                         ]
-                                    })
+                                    }]
                                 ]
                             }
                         }
@@ -150,7 +150,7 @@ module.exports = (env, argv) => ({
                 ]
             },
             {
-                test: /\.ttf$/,
+                test: /\.(ttf|woff2)$/,
                 exclude: /node_modules/,
                 type: 'asset/resource',
                 generator: {

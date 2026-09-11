@@ -21,7 +21,9 @@ const useVideo = () => {
         volume: null,
         muted: null,
         playbackSpeed: null,
+        videoScale: null,
         videoParams: null,
+        hdrInfo: null,
         audioTracks: [],
         selectedAudioTrackId: null,
         subtitlesTracks: [],
@@ -39,9 +41,11 @@ const useVideo = () => {
         extraSubtitlesTextColor: null,
         extraSubtitlesBackgroundColor: null,
         extraSubtitlesOutlineColor: null,
+        assSubtitlesStylingActive: false,
+        fullscreen: null,
     });
 
-    const dispatch = (action, options) => {
+    const dispatch = React.useCallback((action, options) => {
         if (video.current && containerRef.current) {
             try {
                 video.current.dispatch(action, {
@@ -52,24 +56,24 @@ const useVideo = () => {
                 console.error('Video:', error);
             }
         }
-    };
+    }, []);
 
-    const load = (args, options) => {
+    const load = React.useCallback((args, options) => {
         dispatch({
             type: 'command',
             commandName: 'load',
             commandArgs: args
         }, options);
-    };
+    }, [dispatch]);
 
-    const unload = () => {
+    const unload = React.useCallback(() => {
         dispatch({
             type: 'command',
             commandName: 'unload',
         });
-    };
+    }, [dispatch]);
 
-    const addExtraSubtitlesTracks = (tracks) => {
+    const addExtraSubtitlesTracks = React.useCallback((tracks) => {
         dispatch({
             type: 'command',
             commandName: 'addExtraSubtitlesTracks',
@@ -77,9 +81,9 @@ const useVideo = () => {
                 tracks,
             },
         });
-    };
+    }, [dispatch]);
 
-    const addLocalSubtitles = (filename, buffer) => {
+    const addLocalSubtitles = React.useCallback((filename, buffer) => {
         dispatch({
             type: 'command',
             commandName: 'addLocalSubtitles',
@@ -88,74 +92,90 @@ const useVideo = () => {
                 buffer,
             },
         });
-    };
+    }, [dispatch]);
 
-    const setProp = (name, value) => {
+    const setProp = React.useCallback((name, value) => {
         dispatch({ type: 'setProp', propName: name, propValue: value });
-    };
+    }, [dispatch]);
 
-    const setPaused = (state) => {
+    const setPaused = React.useCallback((state) => {
         setProp('paused', state);
-    };
+    }, [setProp]);
 
-    const setVolume = (volume) => {
+    const setVolume = React.useCallback((volume) => {
         setProp('volume', volume);
-    };
+    }, [setProp]);
 
-    const setMuted = (state) => {
+    const setMuted = React.useCallback((state) => {
         setProp('muted', state);
-    };
+    }, [setProp]);
 
-    const setTime = (time) => {
+    const setTime = React.useCallback((time) => {
         setProp('time', time);
-    };
+    }, [setProp]);
 
-    const setPlaybackSpeed = (rate) => {
+    const setPlaybackSpeed = React.useCallback((rate) => {
         setProp('playbackSpeed', rate);
-    };
+    }, [setProp]);
 
-    const setAudioTrack = (id) => {
+    const setAudioTrack = React.useCallback((id) => {
         setProp('selectedAudioTrackId', id);
-    };
+    }, [setProp]);
 
-    const setSubtitlesTrack = (id) => {
+    const setSubtitlesTrack = React.useCallback((id) => {
         setProp('selectedSubtitlesTrackId', id);
         setProp('selectedExtraSubtitlesTrackId', null);
-    };
+    }, [setProp]);
 
-    const setExtraSubtitlesTrack = (id) => {
+    const setExtraSubtitlesTrack = React.useCallback((id) => {
         setProp('selectedSubtitlesTrackId', null);
         setProp('selectedExtraSubtitlesTrackId', id);
-    };
+    }, [setProp]);
 
-    const setSubtitlesDelay = (delay) => {
+    const setSubtitlesDelay = React.useCallback((delay) => {
         setProp('extraSubtitlesDelay', delay);
-    };
+    }, [setProp]);
 
-    const setSubtitlesSize = (size) => {
+    const setSubtitlesSize = React.useCallback((size) => {
         setProp('subtitlesSize', size);
         setProp('extraSubtitlesSize', size);
-    };
+    }, [setProp]);
 
-    const setSubtitlesOffset = (offset) => {
+    const setSubtitlesOffset = React.useCallback((offset) => {
         setProp('subtitlesOffset', offset);
         setProp('extraSubtitlesOffset', offset);
-    };
+    }, [setProp]);
 
-    const setSubtitlesTextColor = (color) => {
+    const setSubtitlesOffsetMinimum = React.useCallback((offset) => {
+        dispatch({
+            type: 'setProp',
+            propName: 'subtitlesOffsetMinimum',
+            propValue: offset,
+        });
+    }, [dispatch]);
+
+    const setVideoScale = React.useCallback((scale) => {
+        setProp('videoScale', scale);
+    }, [setProp]);
+
+    const setFullscreen = React.useCallback((state) => {
+        setProp('fullscreen', state);
+    }, [setProp]);
+
+    const setSubtitlesTextColor = React.useCallback((color) => {
         setProp('subtitlesTextColor', color);
         setProp('extraSubtitlesTextColor', color);
-    };
+    }, [setProp]);
 
-    const setSubtitlesBackgroundColor = (color) => {
+    const setSubtitlesBackgroundColor = React.useCallback((color) => {
         setProp('subtitlesBackgroundColor', color);
         setProp('extraSubtitlesBackgroundColor', color);
-    };
+    }, [setProp]);
 
-    const setSubtitlesOutlineColor = (color) => {
+    const setSubtitlesOutlineColor = React.useCallback((color) => {
         setProp('subtitlesOutlineColor', color);
         setProp('extraSubtitlesOutlineColor', color);
-    };
+    }, [setProp]);
 
     const onError = (error) => {
         events.emit('error', error);
@@ -234,10 +254,13 @@ const useVideo = () => {
         setSubtitlesDelay,
         setSubtitlesSize,
         setSubtitlesOffset,
+        setSubtitlesOffsetMinimum,
         setSubtitlesTextColor,
         setSubtitlesBackgroundColor,
         setSubtitlesOutlineColor,
         setExtraSubtitlesTrack,
+        setVideoScale,
+        setFullscreen,
     };
 };
 

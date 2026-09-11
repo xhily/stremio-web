@@ -3,16 +3,20 @@
 const React = require('react');
 const PropTypes = require('prop-types');
 const classnames = require('classnames');
-const { useRouteFocused } = require('stremio-router');
+const { default: useRouteFocused } = require('stremio/common/useRouteFocused');
 const useAnimationFrame = require('stremio/common/useAnimationFrame');
 const useLiveRef = require('stremio/common/useLiveRef');
 const styles = require('./styles');
 
-const Slider = ({ className, value, buffered, minimumValue, maximumValue, disabled, onSlide, onComplete, audioBoost }) => {
-    const minimumValueRef = useLiveRef(minimumValue !== null && !isNaN(minimumValue) ? minimumValue : 0);
-    const maximumValueRef = useLiveRef(maximumValue !== null && !isNaN(maximumValue) ? maximumValue : 100);
-    const valueRef = useLiveRef(value !== null && !isNaN(value) ? Math.min(maximumValueRef.current, Math.max(minimumValueRef.current, value)) : 0);
-    const bufferedRef = useLiveRef(buffered !== null && !isNaN(buffered) ? Math.min(maximumValueRef.current, Math.max(minimumValueRef.current, buffered)) : 0);
+const Slider = ({ className, value, buffered, minimumValue, maximumValue, disabled, onSlide, onComplete, audioBoost, stepValue }) => {
+    const minimum = minimumValue !== null && !isNaN(minimumValue) ? minimumValue : 0;
+    const maximum = maximumValue !== null && !isNaN(maximumValue) ? maximumValue : 100;
+    const currentValue = value !== null && !isNaN(value) ? Math.min(maximum, Math.max(minimum, value)) : 0;
+    const bufferedValue = buffered !== null && !isNaN(buffered) ? Math.min(maximum, Math.max(minimum, buffered)) : 0;
+    const minimumValueRef = useLiveRef(minimum);
+    const maximumValueRef = useLiveRef(maximum);
+    const stepValueRef = useLiveRef(stepValue !== null && !isNaN(stepValue) ? stepValue : null);
+    const valueRef = useLiveRef(currentValue);
     const onSlideRef = useLiveRef(onSlide);
     const onCompleteRef = useLiveRef(onComplete);
     const sliderContainerRef = React.useRef(null);
@@ -26,7 +30,8 @@ const Slider = ({ className, value, buffered, minimumValue, maximumValue, disabl
         const { x: sliderX, width: sliderWidth } = sliderContainerRef.current.getBoundingClientRect();
         const thumbStart = Math.min(Math.max(mouseX - sliderX, 0), sliderWidth);
         const value = (thumbStart / sliderWidth) * (maximumValueRef.current - minimumValueRef.current) + minimumValueRef.current;
-        return value;
+        const normalizedValue = stepValueRef.current ? parseFloat((Math.round(value / stepValueRef.current) * stepValueRef.current).toFixed(2)) : value;
+        return normalizedValue;
     }, []);
     const retainThumb = React.useCallback(() => {
         window.addEventListener('blur', onBlur);
@@ -129,8 +134,8 @@ const Slider = ({ className, value, buffered, minimumValue, maximumValue, disabl
             releaseThumb();
         };
     }, []);
-    const thumbPosition = Math.max(0, Math.min(1, (valueRef.current - minimumValueRef.current) / (maximumValueRef.current - minimumValueRef.current)));
-    const bufferedPosition = Math.max(0, Math.min(1, (bufferedRef.current - minimumValueRef.current) / (maximumValueRef.current - minimumValueRef.current)));
+    const thumbPosition = Math.max(0, Math.min(1, (currentValue - minimum) / (maximum - minimum)));
+    const bufferedPosition = Math.max(0, Math.min(1, (bufferedValue - minimum) / (maximum - minimum)));
     return (
         <div ref={sliderContainerRef} className={classnames(className, styles['slider-container'], { 'disabled': disabled })} onMouseDown={onMouseDown} onTouchStart={onTouchStart}>
             <div className={styles['layer']}>
@@ -158,6 +163,7 @@ Slider.propTypes = {
     buffered: PropTypes.number,
     minimumValue: PropTypes.number,
     maximumValue: PropTypes.number,
+    stepValue: PropTypes.number,
     disabled: PropTypes.bool,
     onSlide: PropTypes.func,
     onComplete: PropTypes.func,

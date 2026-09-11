@@ -3,8 +3,7 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import classnames from 'classnames';
 import throttle from 'lodash.throttle';
-import { useRouteFocused } from 'stremio-router';
-import { usePlatform, useProfile, useStreamingServer, withCoreSuspender } from 'stremio/common';
+import { usePlatform, useProfile, useStreamingServer, useRouteFocused, withCoreSuspender } from 'stremio/common';
 import { MainNavBars } from 'stremio/components';
 import { SECTIONS } from './constants';
 import Menu from './Menu';
@@ -17,7 +16,7 @@ import Info from './Info';
 import styles from './Settings.less';
 
 const Settings = () => {
-    const { routeFocused } = useRouteFocused();
+    const routeFocused = useRouteFocused();
     const profile = useProfile();
     const platform = usePlatform();
     const streamingServer = useStreamingServer();
@@ -41,13 +40,27 @@ const Settings = () => {
 
     const updateSelectedSectionId = useCallback(() => {
         const container = sectionsContainerRef.current;
-        for (const section of sections) {
-            const sectionContainer = section.ref.current;
-            if (sectionContainer && (sectionContainer.offsetTop + container!.offsetTop) < container!.scrollTop + 50) {
-                setSelectedSectionId(section.id);
-            }
+        if (!container) return;
+
+        const availableSections = sections.filter((section) => section.ref.current);
+        if (!availableSections.length) return;
+
+        const { scrollTop, clientHeight, scrollHeight, offsetTop } = container;
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+
+        if (isAtBottom) {
+            setSelectedSectionId(availableSections[availableSections.length - 1].id);
+            return;
         }
-    }, []);
+
+        const marker = scrollTop + 50;
+        const activeSection = availableSections.reduce((current, section) => {
+            const sectionTop = section.ref.current!.offsetTop + offsetTop;
+            return sectionTop <= marker ? section : current;
+        }, availableSections[0]);
+
+        setSelectedSectionId(activeSection.id);
+    }, [sections]);
 
     const onMenuSelect = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
         const section = sections.find((section) => {
@@ -55,11 +68,11 @@ const Settings = () => {
         });
 
         const container = sectionsContainerRef.current;
-        section && container!.scrollTo({
+        section && container?.scrollTo({
             top: section.ref.current!.offsetTop - container!.offsetTop,
             behavior: 'smooth'
         });
-    }, []);
+    }, [sections]);
 
     const onContainerScroll = useCallback(throttle(() => {
         updateSelectedSectionId();

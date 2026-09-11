@@ -1,13 +1,12 @@
 // Copyright (C) 2017-2024 Smart code 203358507
 
 import { useCallback } from 'react';
-import { useModelState, useToast } from 'stremio/common';
-import useProfile from 'stremio/common/useProfile';
-import { useServices } from 'stremio/services';
+import { useCore } from 'stremio/core';
+import { useModelState, useSettings, useToast } from 'stremio/common';
 
 const useStreamingServerUrls = () => {
-    const { core } = useServices();
-    const profile = useProfile();
+    const core = useCore();
+    const [, updateSettings] = useSettings();
     const toast = useToast();
     const ctx = useModelState({ model: 'ctx' });
     const streamingServerUrls = ctx.streamingServerUrls;
@@ -57,17 +56,8 @@ const useStreamingServerUrls = () => {
         });
     }, []);
     const selectServerUrl = useCallback((url) => {
-        core.transport.dispatch({
-            action: 'Ctx',
-            args: {
-                action: 'UpdateSettings',
-                args: {
-                    ...profile.settings,
-                    streamingServerUrl: url
-                }
-            }
-        });
-    }, [profile.settings]);
+        updateSettings({ streamingServerUrl: url });
+    }, [updateSettings]);
     const reloadServer = useCallback(() => {
         core.transport.dispatch({
             action: 'StreamingServer',
